@@ -66,7 +66,7 @@ class Flattened2Dpatches:
         weights = self.make_weights(trainset.targets, len(trainset.classes))
         weights = torch.DoubleTensor(weights)
         sampler = torch.utils.data.sampler.WeightedRandomSampler(
-            weights, len(weights))
+            weights, len(weights))  # batch에 각 class가 동일한 갯수가 들어올 수 있도록 나눠줌
         trainloader = DataLoader(
             trainset, batch_size=self.batch_size, sampler=sampler)
         valloader = DataLoader(
@@ -74,14 +74,15 @@ class Flattened2Dpatches:
         testloader = DataLoader(
             testset, batch_size=self.batch_size, shuffle=False)
 
+        # flatten data
         return trainloader, valloader, testloader
 
-# img :
+# test
 
 
 def imshow(img):
     plt.figure(figsize=(100, 100))
-    plt.imshow(img.permute(1, 2, 0).numpy())
+    plt.imshow(img.permute(1, 2, 0).numpy())  # imshow는 numpy 주의
     plt.savefig('patch_example.png')
 
 
@@ -90,6 +91,9 @@ if __name__ == '__main__':
     batch_size = 64
     patch_size = 8
     img_size = 32
+    if img_size % patch_size != 0:
+        print("can't divide img by patch_size")
+        return -1
     num_patches = int((img_size*img_size)/(patch_size*patch_size))
     d = Flattened2Dpatches(dataname='cifar10', img_size=img_size,
                            patch_size=patch_size, batch_size=batch_size)
