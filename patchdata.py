@@ -31,15 +31,13 @@ class Flattened2Dpatches:
         self.batch_size = batch_size
 
     def make_weights(self, labels, nclasses):
-        lables = np.array(labels)
-        weight_list = []
+        labels = np.array(labels)
+        weight_arr = np.zeros_like(labels)
+        _, counts = np.unique(labels, return_counts=True)
         for cls in range(nclasses):
-            idx = np.where(labels == cls)[0]
-            count = len(idx)
-            weight = 1 / count
-            weights = [weight]*count
-            weight_list += weights
-        return weight_list
+            weight_arr = np.where(labels == cls, 1/counts[cls], weight_arr)
+
+        return weight_arr
 
     def patchdata(self):
         mean = (0.4914, 0.4822, 0.4465)  # cifar10 img normalization
@@ -62,17 +60,46 @@ class Flattened2Dpatches:
             valset = torch.utils.data.Subset(testset, evens)
             testset = torch.utils.data.Subset(testset, odds)
 
-        elif self.dataname == 'imagenet'
-        pass
+        elif self.dataname == 'imagenet':
+            pass
 
         weights = self.make_weights(trainset.targets, len(trainset.classes))
         weights = torch.DoubleTensor(weights)
         sampler = torch.utils.data.sampler.WeightedRandomSampler(
             weights, len(weights))
-        trainloader = DataLoader(trainset, batch_size=self.batch_sizem sampler=sampler)
+        trainloader = DataLoader(
+            trainset, batch_size=self.batch_size, sampler=sampler)
         valloader = DataLoader(
             valset, batch_size=self.batch_size, shuffle=False)
         testloader = DataLoader(
             testset, batch_size=self.batch_size, shuffle=False)
 
         return trainloader, valloader, testloader
+
+# img :
+
+
+def imshow(img):
+    plt.figure(figsize=(100, 100))
+    plt.imshow(img.permute(1, 2, 0).numpy())
+    plt.savefig('patch_example.png')
+
+
+if __name__ == '__main__':
+    print('Testing Flattened2Dpatches..')
+    batch_size = 64
+    patch_size = 8
+    img_size = 32
+    num_patches = int((img_size*img_size)/(patch_size*patch_size))
+    d = Flattened2Dpatches(dataname='cifar10', img_size=img_size,
+                           patch_size=patch_size, batch_size=batch_size)
+
+    trainloader, _, _ = d.patchdata()
+    images, labels = iter(trainloader).next()
+    print(type(images))
+    print(images.size(), labels.size())
+
+    sample = images.reshape(batch_size, num_patches, -
+                            1, patch_size, patch_size)[0]
+    print("Sample image size: ", sample.size())
+    imshow(torchvision.utils.make_grid(sample, nrow=int(img_size/patch_size)))
